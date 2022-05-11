@@ -1,16 +1,18 @@
 import telebot
 import requests
+from decouple import config
 
-bot = telebot.TeleBot('5132380101:AAEIqIrhvGfI8LlTUsdGJ2p28GFnbf8oslY')
-#url_telegram = 'https://api.telegram.org/bot'
+
+bot = telebot.TeleBot(config('BOT'))
+
 class Exchange:
     def __init__(self):
-        self.__api_key = '8f5695c0ae628374e4fdec9136da0580'
-        self.__url = 'http://api.coinlayer.com/live'
+        self.__API_KEY = config('API')
+        self.__URL = config('URL')
 
     def cryptoRequestDirt(self):
-      self.__query_params = dict(access_key=self.__api_key)
-      self.__responce = requests.get(self.__url, params = self.__query_params)
+      self.__query_params = dict(access_key=self.__API_KEY)
+      self.__responce = requests.get(self.__URL, params = self.__query_params)
       self.__dict_dirt = self.__responce.json()
       #Получаем данные в формате JSON и помещаем их в переменную dict_dirt
       self.__dict_clear = self.__dict_dirt['rates']
@@ -19,8 +21,8 @@ class Exchange:
       return self.__dict_clear.keys()
       #Возвращаем список ключей
     def cryptoRequestClear(self):
-      self.__query_params = dict(access_key=self.__api_key)
-      self.__responce = requests.get(self.__url, params = self.__query_params)
+      self.__query_params = dict(access_key=self.__API_KEY)
+      self.__responce = requests.get(self.__URL, params = self.__query_params)
       self.__dict_dirt = self.__responce.json()
       self.__dict_clear = self.__dict_dirt['rates']
       return self.__dict_clear
@@ -30,19 +32,22 @@ dict_crypto = Exchange()
 
 @bot.message_handler(commands = ['start'])
 def start(message):
-    bot.send_message(message.chat.id, 'Привет, я помогу тебе узнать курсы киптовалют. Отправь мне /lis, чтобы увидеть весь список', parse_mode = None)
+    bot.send_message(message.chat.id, 'Привет \nЯ помогу тебе узнать курсы киптовалют \nОтправь мне /list, чтобы увидеть список криптовалют', parse_mode = None)
 
-@bot.message_handler(commands = ['lis'])
+@bot.message_handler(commands = ['list'])
 def lis(message):
     bot.send_message(message.chat.id, 'Вот список криптовалют', parse_mode = None)
     a = list(dict_crypto.cryptoRequestDirt())
     bot.send_message(message.chat.id, ", ".join(a), parse_mode = None)
-    bot.send_message(message.chat.id, 'Курс какой криптовалюты ты хочешь узнать? ', parse_mode = None)
+    bot.send_message(message.chat.id, 'Напиши в чат, курс какой валюты хочешь узнать', parse_mode = None)
 
 @bot.message_handler(content_types = ['text'])
-def text(message):
+def txt(message):
     base = dict_crypto.cryptoRequestClear()
-    bot.send_message(message.chat.id, f"Курс {message.text}/USD {base[message.text[:7]]}", parse_mode = None)
+    try:
+        bot.send_message(message.chat.id, f"Курс {message.text}/USD {base[message.text[:7]]}", parse_mode = None)
+    except KeyError:
+        bot.send_message(message.chat.id, 'Я не понимаю, проверьте регистр и язык (должен быть английский)', parse_mode = None)
 
 
 bot.polling(none_stop = True)
